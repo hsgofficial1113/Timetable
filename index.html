@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Academic Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --accent1: #43e97b;
+            --accent2: #38f9d7;
+            --free1: #fa709a;
+            --free2: #fee140;
+            --text-dark: #2d3748;
+            --text-light: #ffffff;
+            --bg-color: #f4f7fe;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background: #ffffff;
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 30px 20px 20px;
+            text-align: center;
+        }
+
+        .time-display {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: -webkit-linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .date-display {
+            font-size: 1rem;
+            color: #718096;
+            font-weight: 600;
+        }
+
+        .content {
+            padding: 0 20px 20px;
+            flex-grow: 1;
+        }
+
+        .card {
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            color: var(--text-light);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            font-weight: 800;
+            opacity: 0.95;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card.now { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); }
+        .card.next { background: linear-gradient(135deg, var(--accent1) 0%, var(--accent2) 100%); color: var(--text-dark); }
+        .card.free { background: linear-gradient(135deg, var(--free1) 0%, var(--free2) 100%); text-align: center; color: var(--text-dark); }
+        .card.holiday { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); text-align: center; }
+        .card.night { background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); text-align: center; }
+
+        .subject-code { font-size: 1.6rem; font-weight: 800; margin-bottom: 5px; }
+        .subject-name { font-size: 1.05rem; font-weight: 600; margin-bottom: 15px; opacity: 0.95; }
+        
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .detail-box {
+            background: rgba(255,255,255,0.2);
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-align: center;
+        }
+
+        .card.next .detail-box { background: rgba(0,0,0,0.08); }
+
+        .time-box {
+            background: rgba(0,0,0,0.2);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            text-align: center;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+        .card.next .time-box { background: rgba(255,255,255,0.4); }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 15px;
+            background: var(--text-dark);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(45,55,72,0.2);
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .btn:hover { background: #1a202c; transform: translateY(-2px); }
+
+        .full-timetable {
+            display: none;
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 15px;
+            font-size: 0.8rem;
+            overflow-x: auto;
+        }
+        
+        .full-timetable.active { display: block; animation: fadeIn 0.5s ease; }
+
+        .timetable-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        .timetable-table th, .timetable-table td { border: 1px solid #e2e8f0; padding: 8px; text-align: center; }
+        .timetable-table th { background: #edf2f7; color: #4a5568; }
+        .slot-pill { display: inline-block; padding: 4px 8px; border-radius: 8px; margin: 2px; font-weight: 600; font-size: 0.75rem; background: #e2e8f0; color: #2d3748; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .animate-pulse { animation: pulse 2s infinite; font-size: 3rem; margin-bottom: 10px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <div class="time-display" id="timeDisplay">00:00 AM</div>
+        <div class="date-display" id="dateDisplay">Loading...</div>
+    </div>
+
+    <div class="content">
+        <div id="statusContainer">
+            </div>
+
+        <button class="btn" id="toggleViewBtn">View Full Timetable</button>
+
+        <div class="full-timetable" id="fullTimetable">
+            <table class="timetable-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Mon</th>
+                        <th>Tue</th>
+                        <th>Wed</th>
+                        <th>Thu</th>
+                        <th>Fri</th>
+                    </tr>
+                </thead>
+                <tbody id="timetableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Data Dictionary ---
+    const subjects = {
+        "CO2050": "Database Systems",
+        "CO2060": "Software Systems Design Project",
+        "CO2070": "Computer Architecture",
+        "CO2080": "Network Design Principles",
+        "EE2820": "Applied Electronics",
+        "EM2010": "Calculus II",
+        "CO5420": "Artificial Neural Networking",
+        "CO5430": "Image Processing"
+    };
+
+    const timeToMins = (t) => { let [h, m] = t.split(':'); return parseInt(h) * 60 + parseInt(m); };
+
+    // Structure: [Start Time, End Time, Subject Code(s), Type, Room]
+    // Note: CO5520 has been completely removed.
+    const scheduleData = {
+        1: [ // Monday
+            { start: "08:00", end: "09:50", code: "CO2070", type: "Lecture", loc: "[7]" },
+            { start: "10:10", end: "12:00", code: "CO2060", type: "Project", loc: "[P]" },
+            { start: "12:00", end: "12:55", code: "EE2820", type: "Lecture", loc: "[9]" },
+            { start: "13:55", end: "14:50", code: "CO5420", type: "Lecture", loc: "[7]" },
+            { start: "14:50", end: "17:00", code: "CO5420 / CO5430", type: "Lab", loc: "[L][6W] / [L][8W]" }
+        ],
+        2: [ // Tuesday
+            { start: "08:00", end: "09:50", code: "CO2070", type: "Lab", loc: "[L]" },
+            { start: "10:10", end: "12:55", code: "CO2080", type: "Lab", loc: "[L]" },
+            { start: "13:55", end: "15:45", code: "EE2820", type: "Lab", loc: "[L]" }
+        ],
+        3: [ // Wednesday
+            { start: "08:00", end: "09:50", code: "CO2080", type: "Lecture", loc: "[8]" },
+            { start: "10:10", end: "11:05", code: "CO5420", type: "Lecture", loc: "[8]" },
+            { start: "11:05", end: "12:00", code: "Student Union", type: "Free Hour", loc: "-" },
+            { start: "12:00", end: "12:55", code: "EE2820", type: "Lecture", loc: "[9]" },
+            { start: "13:55", end: "14:50", code: "CO5430", type: "Lecture", loc: "[7]" },
+            { start: "14:50", end: "17:00", code: "CO2060", type: "Project", loc: "[P]" }
+        ],
+        4: [ // Thursday
+            { start: "08:00", end: "09:50", code: "CO2070", type: "Lab", loc: "[L]" },
+            { start: "10:10", end: "12:00", code: "CO2050", type: "Lab", loc: "[L]" },
+            { start: "12:00", end: "13:55", code: "EM2010", type: "Lecture", loc: "[8]" },
+            { start: "13:55", end: "17:00", code: "CO5430", type: "Lecture", loc: "[8]" }
+        ],
+        5: [ // Friday
+            { start: "08:00", end: "09:50", code: "CO2050", type: "Lecture", loc: "[8]" },
+            { start: "10:10", end: "12:00", code: "CO2060", type: "Project", loc: "[P]" },
+            { start: "12:00", end: "12:55", code: "EE2820", type: "Lecture", loc: "[9]" },
+            { start: "13:55", end: "14:50", code: "CO5420", type: "Lecture", loc: "[8]" },
+            { start: "14:50", end: "17:00", code: "CO2060", type: "Project", loc: "[P]" }
+        ]
+    };
+
+    // Sri Lanka Public Holidays (Format: MM-DD)
+    const slHolidays = [
+        "01-14", "01-25", "02-04", "02-23", "03-08", "03-24", "04-10", "04-13", "04-14", "05-01", "05-23", "05-24", "06-21", "07-20", "08-19", "09-05", "09-17", "10-17", "10-31", "11-15", "12-14", "12-25"
+    ];
+
+    // --- Logic & Rendering ---
+
+    function isHoliday(dateObj) {
+        let month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        let day = dateObj.getDate().toString().padStart(2, '0');
+        return slHolidays.includes(`${month}-${day}`);
+    }
+
+    function getFullSubjectName(codeStr) {
+        if(codeStr === "Student Union") return "Student Union Hour";
+        return codeStr.split(' / ').map(c => subjects[c] || c).join(' <br>&amp; ');
+    }
+
+    function createCardHTML(title, slot, cssClass) {
+        if(!slot) return '';
+        let name = getFullSubjectName(slot.code);
+        let icon = cssClass === 'now' ? '🔴' : '🟢';
+        
+        return `
+            <div class="card ${cssClass}">
+                <div class="card-title">${icon} ${title}</div>
+                <div class="subject-code">${slot.code}</div>
+                <div class="subject-name">${name}</div>
+                <div class="details-grid">
+                    <div class="detail-box">📚 ${slot.type}</div>
+                    <div class="detail-box">📍 ${slot.loc}</div>
+                </div>
+                <div class="time-box">
+                    ⏱️ ${slot.start} - ${slot.end}
+                </div>
+            </div>
+        `;
+    }
+
+    function getStatusHTML(dateObj) {
+        let currentMins = dateObj.getHours() * 60 + dateObj.getMinutes();
+        let dayOfWeek = dateObj.getDay();
+        let isTodayFree = isHoliday(dateObj) || dayOfWeek === 0 || dayOfWeek === 6;
+        let daySchedule = isTodayFree ? [] : (scheduleData[dayOfWeek] || []);
+
+        let currentClass = null;
+        let nextClass = null;
+
+        for (let i = 0; i < daySchedule.length; i++) {
+            let slot = daySchedule[i];
+            let startMins = timeToMins(slot.start);
+            let endMins = timeToMins(slot.end);
+
+            if (currentMins >= startMins && currentMins < endMins) {
+                currentClass = slot;
+                nextClass = daySchedule[i+1] || null;
+                break;
+            }
+            if (currentMins < startMins && !nextClass) {
+                nextClass = slot;
+            }
+        }
+
+        let html = '';
+
+        // 1. Render Current Status
+        if (currentClass) {
+            html += createCardHTML("HAPPENING NOW", currentClass, "now");
+        } else if (!isTodayFree) {
+            html += `
+                <div class="card free">
+                    <div class="animate-pulse">☕</div>
+                    <div class="subject-code">Free Time</div>
+                    <div class="subject-name">No class right now. Time to study or relax!</div>
+                </div>`;
+        } else {
+            html += `
+                <div class="card holiday">
+                    <div class="animate-pulse">🌴</div>
+                    <div class="subject-code">Holiday / Weekend</div>
+                    <div class="subject-name">No classes today. Take a well-deserved break!</div>
+                </div>`;
+        }
+
+        // 2. Render Next Status or Night Mode
+        if (nextClass) {
+            html += createCardHTML("UP NEXT TODAY", nextClass, "next");
+        } else {
+            // NIGHT MODE / LOOKAHEAD LOGIC
+            // Look ahead up to 7 days to find the next scheduled class
+            let daysAhead = 1;
+            let futureClass = null;
+            let futureDayName = "";
+
+            while(daysAhead <= 7) {
+                let futureDate = new Date(dateObj);
+                futureDate.setDate(dateObj.getDate() + daysAhead);
+                
+                let futureDay = futureDate.getDay();
+                if(!isHoliday(futureDate) && futureDay !== 0 && futureDay !== 6) {
+                    let futureDaySchedule = scheduleData[futureDay];
+                    if(futureDaySchedule && futureDaySchedule.length > 0) {
+                        futureClass = futureDaySchedule[0]; // First class of that day
+                        futureDayName = daysAhead === 1 ? "tomorrow" : "on " + futureDate.toLocaleDateString('en-US', {weekday: 'long'});
+                        break;
+                    }
+                }
+                daysAhead++;
+            }
+
+            if (futureClass) {
+                let fName = getFullSubjectName(futureClass.code).replace('<br>&amp;', ' & ');
+                html += `
+                <div class="card night">
+                    <div class="card-title" style="justify-content: center;">🌙 CLASSES DONE FOR TODAY</div>
+                    <div style="font-size: 1rem; line-height: 1.6; margin-top: 15px;">
+                        The next lecture will begin <br>
+                        <span style="color: var(--accent2); font-weight: 800; font-size: 1.2rem;">${futureDayName}</span> at <span style="color: var(--accent1); font-weight: 800; font-size: 1.2rem;">${futureClass.start}</span>.<br><br>
+                        <strong style="font-size: 1.1rem;">${futureClass.code}</strong><br>
+                        ${fName}<br>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; display: inline-block;">
+                            📍 ${futureClass.loc} &nbsp;|&nbsp; 📚 ${futureClass.type}
+                        </div>
+                    </div>
+                </div>`;
+            }
+        }
+
+        return html;
+    }
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('timeDisplay').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        document.getElementById('dateDisplay').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        document.getElementById('statusContainer').innerHTML = getStatusHTML(now);
+    }
+
+    // Generate Full Timetable Table (CO5520 Removed)
+    function renderFullTimetable() {
+        const timeBlocks = ["08:00 - 09:50", "10:10 - 12:00", "12:00 - 12:55", "13:55 - 14:50", "14:50 - 17:00"];
+        let tbody = document.getElementById('timetableBody');
+        
+        timeBlocks.forEach(timeLabel => {
+            let tr = document.createElement('tr');
+            let tdTime = document.createElement('td');
+            tdTime.innerText = timeLabel;
+            tdTime.style.fontWeight = "bold";
+            tdTime.style.fontSize = "0.7rem";
+            tr.appendChild(tdTime);
+
+            for(let day = 1; day <= 5; day++) {
+                let td = document.createElement('td');
+                let slot = scheduleData[day].find(s => timeLabel.includes(s.start) || (timeToMins(s.start) >= timeToMins(timeLabel.split(' - ')[0]) && timeToMins(s.start) < timeToMins(timeLabel.split(' - ')[1])));
+                
+                if(slot) {
+                    td.innerHTML = `<span class="slot-pill">${slot.code}</span><br><span style="font-size:0.6rem; color:#718096">${slot.type}</span>`;
+                } else {
+                    td.innerText = "-";
+                }
+                tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Toggle Button Logic
+    document.getElementById('toggleViewBtn').addEventListener('click', function() {
+        const tb = document.getElementById('fullTimetable');
+        if(tb.classList.contains('active')) {
+            tb.classList.remove('active');
+            this.innerText = "View Full Timetable";
+        } else {
+            tb.classList.add('active');
+            this.innerText = "Hide Timetable";
+        }
+    });
+
+    // Init
+    updateClock();
+    setInterval(updateClock, 60000); // Update every minute
+    renderFullTimetable();
+
+</script>
+</body>
+</html>
