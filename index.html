@@ -275,19 +275,34 @@
 <script>
     // --- Timetable Data ---
     const subjects = {
-        "CO2050": "Database Systems", "CO2060": "Software Systems Design Project", "CO2070": "Computer Architecture",
-        "CO2080": "Network Design Principles", "EE2820": "Applied Electronics", "EM2010": "Calculus II",
-        "CO5420": "Artificial Neural Networking", "CO5430": "Image Processing"
+        "EF3010": "Engineer in Society",
+        "EF3020": "Social Project",
+        "EF3070": "Introduction to Digital Art",
+        "MA5520": "Marketing for Engineers"
     };
 
     const timeToMins = (t) => { let [h, m] = t.split(':'); return parseInt(h) * 60 + parseInt(m); };
 
     const scheduleData = {
-        1: [ { start: "08:00", end: "09:50", code: "CO2070", type: "Lecture", loc: "[7]" }, { start: "10:10", end: "12:00", code: "CO2060", type: "Project", loc: "[P]" }, { start: "12:00", end: "12:55", code: "EE2820", type: "Lecture", loc: "[9]" }, { start: "13:55", end: "14:50", code: "CO5420", type: "Lecture", loc: "[7]" }, { start: "14:50", end: "17:00", code: "CO5420 / CO5430", type: "Lab", loc: "[L][6W] / [L][8W]" } ],
-        2: [ { start: "08:00", end: "09:50", code: "CO2070", type: "Lab", loc: "[L]" }, { start: "10:10", end: "12:00", code: "CO2080", type: "Lab", loc: "[L]" }, { start: "12:00", end: "12:55", code: "CO2080", type: "Lecture", loc: "[8]" }, { start: "13:55", end: "15:45", code: "EE2820", type: "Lab", loc: "[L]" } ],
-        3: [ { start: "08:00", end: "09:50", code: "CO2080", type: "Lecture", loc: "[8]" }, { start: "10:10", end: "11:05", code: "CO5420", type: "Lecture", loc: "[8]" }, { start: "11:05", end: "12:00", code: "Student Union", type: "Free Hour", loc: "-" }, { start: "12:00", end: "12:55", code: "EE2820", type: "Lecture", loc: "[9]" }, { start: "13:55", end: "14:50", code: "CO5430", type: "Lecture", loc: "[7]" }, { start: "14:50", end: "17:00", code: "CO2060", type: "Project", loc: "[P]" } ],
-        4: [ { start: "08:00", end: "09:50", code: "CO2070", type: "Lab", loc: "[L]" }, { start: "10:10", end: "12:00", code: "CO2050", type: "Lab", loc: "[L]" }, { start: "13:00", end: "14:50", code: "EM2010", type: "Lecture", loc: "[8]" }, { start: "14:50", end: "17:00", code: "CO5430", type: "Lecture", loc: "[8]" } ],
-        5: [ { start: "08:00", end: "09:50", code: "CO2050", type: "Lecture", loc: "[8]" }, { start: "10:10", end: "12:00", code: "CO2060", type: "Project", loc: "[P]" }, { start: "12:00", end: "12:55", code: "EE2820", type: "Lecture", loc: "[9]" }, { start: "13:55", end: "14:50", code: "CO5420", type: "Lecture", loc: "[8]" }, { start: "14:50", end: "17:00", code: "CO2060", type: "Project", loc: "[P]" } ]
+        1: [ // Monday
+            { start: "10:10", end: "12:00", code: "MA5520", type: "Lecture", loc: "[2]" },
+            { start: "13:00", end: "14:50", code: "MA5520", type: "Lecture", loc: "[2]" },
+            { start: "15:10", end: "17:00", code: "MA5520", type: "Lecture", loc: "[2]" }
+        ],
+        2: [ // Tuesday
+            { start: "08:00", end: "09:50", code: "EF3010", type: "Lecture", loc: "[7]" },
+            { start: "11:05", end: "13:00", code: "EF3070", type: "Lecture", loc: "[12]" },
+            { start: "15:10", end: "17:00", code: "EF3070", type: "Lecture", loc: "[12]" }
+        ],
+        3: [ // Wednesday
+            { start: "08:00", end: "09:50", code: "EF3010 / EF3020", type: "Lecture", loc: "[7] / [12]" }
+        ],
+        4: [ // Thursday
+            { start: "08:00", end: "09:50", code: "EF3010 / EF3020", type: "Lecture", loc: "[7] / [12]" }
+        ],
+        5: [ // Friday
+            
+        ]
     };
 
     const slHolidays = ["01-14", "01-25", "02-04", "02-23", "03-08", "03-24", "04-10", "04-13", "04-14", "05-01", "05-28", "05-30", "05-31", "06-17", "06-29", "07-29", "08-26", "09-05", "09-17", "10-17", "10-31", "11-15", "12-14", "12-25"];
@@ -485,9 +500,14 @@
             let dayDiv = document.createElement('div');
             dayDiv.className = 'day-group';
             dayDiv.innerHTML = `<div class="day-title">${dayNames[day]}</div>`;
-            scheduleData[day].forEach(slot => {
-                dayDiv.innerHTML += `<div class="schedule-item"><div class="item-time">${slot.start} - ${slot.end}</div><div class="item-details"><div class="item-code">${slot.code}</div><div class="item-type">${slot.type}</div></div><div class="item-loc">${slot.loc}</div></div>`;
-            });
+            
+            if (scheduleData[day] && scheduleData[day].length > 0) {
+                scheduleData[day].forEach(slot => {
+                    dayDiv.innerHTML += `<div class="schedule-item"><div class="item-time">${slot.start} - ${slot.end}</div><div class="item-details"><div class="item-code">${slot.code}</div><div class="item-type">${slot.type}</div></div><div class="item-loc">${slot.loc}</div></div>`;
+                });
+            } else {
+                dayDiv.innerHTML += `<div class="schedule-item" style="justify-content: center; color: #a0aec0;">No classes scheduled</div>`;
+            }
             container.appendChild(dayDiv);
         }
     }
