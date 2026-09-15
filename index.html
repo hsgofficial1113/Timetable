@@ -92,7 +92,7 @@
         @keyframes bloom { to { bottom: 20px; opacity: 1; } }
         @keyframes sway { 0% { transform: rotate(-10deg); } 100% { transform: rotate(10deg); } }
 
-        /* --- App Container (Glassmorphism) --- */
+        /* --- App Container --- */
         .app-container {
             width: 100%;
             max-width: 480px;
@@ -162,7 +162,6 @@
         }
         .weather-desc { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; }
 
-        /* Weather Mini Animations */
         .w-anim { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
         .w-sun { position: absolute; right: -5px; top: -5px; width: 40px; height: 40px; background: #FFD700; border-radius: 50%; box-shadow: 0 0 15px #FFD700; animation: spin 10s linear infinite; }
         .w-cloud-anim { position: absolute; background: rgba(255,255,255,0.4); border-radius: 50px; animation: drift linear infinite; }
@@ -277,31 +276,32 @@
     const subjects = {
         "EF3010": "Engineer in Society",
         "EF3020": "Social Project",
-        "EF3070": "Introduction to Digital Art",
-        "MA5520": "Marketing for Engineers"
+        "EF3040": "Painting and Sculpture",
+        "MA5520": "Marketing for Engineers",
+        "MA5720": "Organizational and Industrial Psychology"
     };
 
     const timeToMins = (t) => { let [h, m] = t.split(':'); return parseInt(h) * 60 + parseInt(m); };
 
+    // Separate objects for simultaneous classes to prevent rendering exclusion
     const scheduleData = {
         1: [ // Monday
             { start: "10:10", end: "12:00", code: "MA5520", type: "Lecture", loc: "[2]" },
             { start: "13:00", end: "14:50", code: "MA5520", type: "Lecture", loc: "[2]" },
-            { start: "15:10", end: "17:00", code: "MA5520 / EF3070", type: "Lecture", loc: "[2] / [12]" }
+            { start: "15:10", end: "17:00", code: "MA5520", type: "Lecture", loc: "[2]" }
         ],
         2: [ // Tuesday
-            { start: "08:00", end: "09:50", code: "EF3010", type: "Lecture", loc: "[7]" },
-            { start: "11:05", end: "12:00", code: "EF3070", type: "Lecture", loc: "[12]" },
-            { start: "13:00", end: "13:55", code: "EF3070", type: "Lecture", loc: "[12]" }
+            { start: "08:00", end: "09:50", code: "EF3010", type: "Lecture", loc: "[7]" }
         ],
         3: [ // Wednesday
-            
+            { start: "16:05", end: "17:55", code: "EF3040", type: "Lecture", loc: "[9]" }
         ],
         4: [ // Thursday
-            { start: "08:00", end: "09:50", code: "EF3010 / EF3020", type: "Lecture", loc: "[7] / [12]" }
+            { start: "08:00", end: "09:50", code: "EF3010", type: "Lecture", loc: "[7]" },
+            { start: "08:00", end: "09:50", code: "EF3020", type: "Lecture", loc: "[12]" }
         ],
         5: [ // Friday
-            
+            { start: "16:05", end: "17:55", code: "EF3040", type: "Lecture", loc: "[9]" }
         ]
     };
 
@@ -314,8 +314,7 @@
     }
 
     function getFullSubjectName(codeStr) {
-        if(codeStr === "Student Union") return "Student Union Hour";
-        return codeStr.split(' / ').map(c => subjects[c] || c).join(' <br>&amp; ');
+        return subjects[codeStr] || codeStr;
     }
 
     // --- Dynamic Background Logic ---
@@ -327,7 +326,6 @@
         if (hour >= 6 && hour < 18) {
             bg.className = 'day-theme';
             bg.innerHTML += '<div class="sun-bg"></div>';
-            // Add flowers
             const flowers = ['🌻', '🌺', '🌷', '🌼'];
             for(let i=0; i<6; i++) {
                 let f = document.createElement('div');
@@ -340,7 +338,6 @@
         } else {
             bg.className = 'night-theme';
             bg.innerHTML += '<div class="moon"></div>';
-            // Add stars
             for(let i=0; i<50; i++) {
                 let star = document.createElement('div');
                 star.className = 'star';
@@ -365,7 +362,7 @@
         function updateWeatherUI(code, temp) {
             tempDisplay.innerText = `${Math.round(temp)}°C`;
             weatherAnim.innerHTML = '';
-            weatherWidget.className = 'weather-card'; // reset
+            weatherWidget.className = 'weather-card';
 
             let type = 'clear';
             if(code >= 1 && code <= 3) type = 'cloud';
@@ -399,11 +396,10 @@
                 .catch(err => { weatherDesc.innerText = 'Offline'; });
         }
 
-        // Try to get location, default to Kandy, SL if blocked
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude),
-                (err) => fetchWeather(7.2906, 80.6337) // Fallback Kandy
+                (err) => fetchWeather(7.2906, 80.6337) 
             );
         } else {
             fetchWeather(7.2906, 80.6337);
@@ -434,19 +430,34 @@
         let isTodayFree = isHoliday(dateObj) || dayOfWeek === 0 || dayOfWeek === 6;
         let daySchedule = isTodayFree ? [] : (scheduleData[dayOfWeek] || []);
 
-        let currentClass = null, nextClass = null;
+        let currentClasses = [];
+        let nextClasses = [];
+        let foundNextTime = null;
+
         for (let i = 0; i < daySchedule.length; i++) {
             let slot = daySchedule[i];
             let startMins = timeToMins(slot.start);
             let endMins = timeToMins(slot.end);
-            if (currentMins >= startMins && currentMins < endMins) { currentClass = slot; nextClass = daySchedule[i+1] || null; break; }
-            if (currentMins < startMins && !nextClass) { nextClass = slot; }
+            
+            // Collect ALL classes happening at this very moment
+            if (currentMins >= startMins && currentMins < endMins) { 
+                currentClasses.push(slot); 
+            }
+            // Collect ALL classes starting at the next available time slot
+            else if (currentMins < startMins) {
+                if (foundNextTime === null) {
+                    foundNextTime = startMins;
+                    nextClasses.push(slot);
+                } else if (startMins === foundNextTime) {
+                    nextClasses.push(slot);
+                }
+            }
         }
 
         let html = '';
         let isLunch = false, isTea = false, lunchEnd = "";
 
-        if (!currentClass && !isTodayFree) {
+        if (currentClasses.length === 0 && !isTodayFree) {
             if (dayOfWeek === 4) {
                 if (currentMins >= timeToMins("12:00") && currentMins < timeToMins("13:00")) { isLunch = true; lunchEnd = "13:00"; }
             } else {
@@ -458,14 +469,18 @@
             }
         }
 
-        if (currentClass) { html += createCardHTML("HAPPENING NOW", currentClass, "now"); }
+        if (currentClasses.length > 0) { 
+            currentClasses.forEach(c => html += createCardHTML("HAPPENING NOW", c, "now")); 
+        }
         else if (isLunch) { html += `<div class="card lunch"><div class="animate-pulse">🍱</div><div class="subject-code">Lunch Break</div><div class="subject-name">Fuel up for the afternoon!</div><div class="time-box" style="background: rgba(255,255,255,0.2);">Ends at ${lunchEnd}</div></div>`; }
         else if (isTea) { html += `<div class="card tea"><div class="animate-pulse">☕</div><div class="subject-code">Tea Time</div><div class="subject-name">Grab a quick refreshment.</div></div>`; }
         else if (!isTodayFree && currentMins < timeToMins("17:00")) { html += `<div class="card free"><div class="animate-pulse">📖</div><div class="subject-code">Free Block</div><div class="subject-name">No class right now. Time to study or relax!</div></div>`; }
         else if (isTodayFree) { html += `<div class="card holiday"><div class="animate-pulse">🌴</div><div class="subject-code">Holiday / Weekend</div><div class="subject-name">No classes today. Take a well-deserved break!</div></div>`; }
 
-        if (nextClass) { html += createCardHTML("UP NEXT TODAY", nextClass, "next"); }
-        else {
+        if (nextClasses.length > 0) { 
+            nextClasses.forEach(n => html += createCardHTML("UP NEXT TODAY", n, "next")); 
+        }
+        else if (currentClasses.length === 0 && currentMins >= timeToMins("17:00")) {
             let daysAhead = 1, futureClass = null, futureDayName = "";
             while(daysAhead <= 7) {
                 let futureDate = new Date(dateObj);
@@ -479,7 +494,7 @@
                 daysAhead++;
             }
             if (futureClass) {
-                let fName = getFullSubjectName(futureClass.code).replace('<br>&amp;', ' & ');
+                let fName = getFullSubjectName(futureClass.code);
                 html += `<div class="card night-card"><div class="card-title" style="justify-content: center;">🌙 CLASSES DONE FOR TODAY</div><div style="font-size: 1rem; line-height: 1.6; margin-top: 15px;">The next lecture will begin <br><span style="color: var(--accent2); font-weight: 800; font-size: 1.2rem;">${futureDayName}</span> at <span style="color: var(--accent1); font-weight: 800; font-size: 1.2rem;">${futureClass.start}</span>.<br><br><strong style="font-size: 1.1rem;">${futureClass.code}</strong><br>${fName}<br><div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; display: inline-block;">📍 ${futureClass.loc} &nbsp;|&nbsp; 📚 ${futureClass.type}</div></div></div>`;
             }
         }
@@ -518,13 +533,12 @@
         else { tb.classList.add('active'); this.innerText = "Hide Timetable"; }
     });
 
-    // Init App
     setBackgroundTheme();
     setupWeather();
     updateClock();
-    setInterval(updateClock, 60000); // Clock every min
-    setInterval(setBackgroundTheme, 3600000); // BG hourly
-    setInterval(setupWeather, 1800000); // Weather every 30 mins
+    setInterval(updateClock, 60000); 
+    setInterval(setBackgroundTheme, 3600000); 
+    setInterval(setupWeather, 1800000); 
     renderFullTimetable();
 
 </script>
